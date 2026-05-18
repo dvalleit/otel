@@ -283,7 +283,7 @@
   <p class="hero-sub es">Domina la observabilidad — trazas, métricas y logs — con ejercicios prácticos inspirados en los mejores repositorios de GitHub.</p>
   <div class="hero-stats">
     <div class="stat"><span class="stat-n">4</span><span class="stat-l en">Modules</span><span class="stat-l es">Módulos</span></div>
-    <div class="stat"><span class="stat-n">5</span><span class="stat-l en">Exercises</span><span class="stat-l es">Ejercicios</span></div>
+    <div class="stat"><span class="stat-n">9</span><span class="stat-l en">Exercises</span><span class="stat-l es">Ejercicios</span></div>
     <div class="stat"><span class="stat-n">3</span><span class="stat-l en">Signals</span><span class="stat-l es">Señales</span></div>
     <div class="stat"><span class="stat-n">2</span><span class="stat-l en">Languages</span><span class="stat-l es">Idiomas</span></div>
   </div>
@@ -1076,6 +1076,418 @@ if __name__ == "__main__":
             <div class="challenge-label es">🏆 Desafío</div>
             <div class="challenge-text en">Add <strong>Baggage</strong> to pass a <code>user.id</code> value from Service A all the way through to Service B without adding it as a span attribute manually.</div>
             <div class="challenge-text es">Agregar <strong>Baggage</strong> para pasar un valor <code>user.id</code> desde el Servicio A hasta el Servicio B sin añadirlo manualmente como atributo de span.</div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- EX 6 -->
+      <div class="ex" id="ex6">
+        <div class="ex-header" onclick="toggleEx('ex6')">
+          <div class="ex-num">6</div>
+          <div class="ex-title-wrap">
+            <div class="ex-title en">Zero-Code Instrumentation — The Dice Roller (Official OTel Tutorial)</div>
+            <div class="ex-title es">Instrumentación Cero-Código — El Lanzador de Dados (Tutorial Oficial OTel)</div>
+            <div class="ex-meta"><span class="step-badge badge-beginner">Beginner</span> &nbsp;~15 min &nbsp;·&nbsp; <a href="https://opentelemetry.io/docs/languages/python/getting-started/" target="_blank" style="color:var(--cyan-l); font-size:.8rem;">opentelemetry.io ↗</a></div>
+          </div>
+          <span class="ex-chevron">▶</span>
+        </div>
+        <div class="ex-body">
+          <div class="ex-objective en"><strong>Objective:</strong> Use the <code>opentelemetry-instrument</code> agent to get traces, metrics <em>and</em> logs from a Flask app with <strong>zero code changes</strong> — straight from the official getting-started guide.</div>
+          <div class="ex-objective es"><strong>Objetivo:</strong> Usar el agente <code>opentelemetry-instrument</code> para obtener trazas, métricas <em>y</em> logs de una app Flask <strong>sin cambiar el código</strong> — directamente de la guía oficial.</div>
+          <div class="code-block" style="margin-top:1rem;">
+            <div class="tab-bar">
+              <button class="tab-btn active" onclick="switchTab(this,'ex6','app')">app.py</button>
+              <button class="tab-btn" onclick="switchTab(this,'ex6','run')">Run it</button>
+              <button class="tab-btn" onclick="switchTab(this,'ex6','manual')">+ Manual span</button>
+            </div>
+            <div class="tab-pane active" id="ex6-app">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-python"># app.py — the dice roller from opentelemetry.io/docs/languages/python/getting-started/
+from random import randint
+from flask import Flask, request
+import logging
+
+app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@app.route("/rolldice")
+def roll_dice():
+    player = request.args.get('player', default=None, type=str)
+    result = str(roll())
+    if player:
+        logger.warning("%s is rolling the dice: %s", player, result)
+    else:
+        logger.warning("Anonymous player is rolling the dice: %s", result)
+    return result
+
+def roll():
+    return randint(1, 6)</code></pre>
+            </div>
+            <div class="tab-pane" id="ex6-run">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-bash"># 1. Install
+pip install flask opentelemetry-distro
+opentelemetry-bootstrap -a install
+
+# 2. Run with agent — all three signals exported to console
+opentelemetry-instrument \
+    --traces_exporter console \
+    --metrics_exporter console \
+    --logs_exporter console \
+    --service_name dice-server \
+    flask run -p 8080
+
+# 3. Hit the endpoint
+curl "http://localhost:8080/rolldice?player=Alice"
+
+# You'll see spans, metrics AND correlated logs in the console!
+# The log record shares the same trace_id as the span — that's OTel magic.</code></pre>
+            </div>
+            <div class="tab-pane" id="ex6-manual">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-python"># Add manual instrumentation ON TOP of auto-instrumentation
+from random import randint
+from flask import Flask
+from opentelemetry import trace
+
+# The tracer is available because opentelemetry-instrument set up the provider
+tracer = trace.get_tracer("diceroller.tracer")
+
+app = Flask(__name__)
+
+@app.route("/rolldice")
+def roll_dice():
+    return str(roll())
+
+def roll():
+    # Create a child span — its parent_id will match the HTTP span
+    with tracer.start_as_current_span("roll") as span:
+        result = randint(1, 6)
+        span.set_attribute("roll.value", result)  # enrich the child span
+        return result
+
+# Run the same way with opentelemetry-instrument
+# Now you'll see TWO spans: the auto-generated HTTP span + your 'roll' child span</code></pre>
+            </div>
+          </div>
+          <div class="challenge-box">
+            <div class="challenge-label en">🏆 Challenge</div>
+            <div class="challenge-label es">🏆 Desafío</div>
+            <div class="challenge-text en">Add a <strong>metrics counter</strong> to track the total number of each dice value rolled (e.g., how many times a 6 was rolled). Use <code>meter.create_counter("dice.rolls")</code> and add <code>roll.value</code> as a dimension.</div>
+            <div class="challenge-text es">Agregar un <strong>contador de métricas</strong> para registrar cuántas veces se lanzó cada valor del dado. Usa <code>meter.create_counter("dice.rolls")</code> y añade <code>roll.value</code> como dimensión.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 7 -->
+      <div class="ex" id="ex7">
+        <div class="ex-header" onclick="toggleEx('ex7')">
+          <div class="ex-num">7</div>
+          <div class="ex-title-wrap">
+            <div class="ex-title en">Node.js Express Auto-Instrumentation (Official OTel Tutorial)</div>
+            <div class="ex-title es">Auto-Instrumentación Express en Node.js (Tutorial Oficial OTel)</div>
+            <div class="ex-meta"><span class="step-badge badge-beginner">Beginner</span> &nbsp;~15 min &nbsp;·&nbsp; <a href="https://opentelemetry.io/docs/languages/js/getting-started/nodejs/" target="_blank" style="color:var(--cyan-l); font-size:.8rem;">opentelemetry.io ↗</a></div>
+          </div>
+          <span class="ex-chevron">▶</span>
+        </div>
+        <div class="ex-body">
+          <div class="ex-objective en"><strong>Objective:</strong> Set up an Express dice-roller app and auto-instrument it using the official Node.js SDK pattern with a separate <code>instrumentation.js</code> file loaded via <code>--import</code>.</div>
+          <div class="ex-objective es"><strong>Objetivo:</strong> Configurar una app Express lanzadora de dados y auto-instrumentarla usando el patrón oficial del SDK de Node.js con un archivo separado <code>instrumentation.js</code> cargado vía <code>--import</code>.</div>
+          <div class="code-block" style="margin-top:1rem;">
+            <div class="tab-bar">
+              <button class="tab-btn active" onclick="switchTab(this,'ex7','install')">Install</button>
+              <button class="tab-btn" onclick="switchTab(this,'ex7','instr')">instrumentation.mjs</button>
+              <button class="tab-btn" onclick="switchTab(this,'ex7','app')">app.js</button>
+              <button class="tab-btn" onclick="switchTab(this,'ex7','run')">Run</button>
+            </div>
+            <div class="tab-pane active" id="ex7-install">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-bash">mkdir otel-node-demo && cd otel-node-demo
+npm init -y
+npm install express
+npm install @opentelemetry/sdk-node \
+  @opentelemetry/api \
+  @opentelemetry/auto-instrumentations-node \
+  @opentelemetry/sdk-metrics \
+  @opentelemetry/sdk-trace-node</code></pre>
+            </div>
+            <div class="tab-pane" id="ex7-instr">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-javascript">// instrumentation.mjs — loaded before app code via --import
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-node';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import {
+  PeriodicExportingMetricReader,
+  ConsoleMetricExporter,
+} from '@opentelemetry/sdk-metrics';
+
+const sdk = new NodeSDK({
+  traceExporter: new ConsoleSpanExporter(),
+  metricReader: new PeriodicExportingMetricReader({
+    exporter: new ConsoleMetricExporter(),
+  }),
+  instrumentations: [getNodeAutoInstrumentations()],
+});
+
+sdk.start();</code></pre>
+            </div>
+            <div class="tab-pane" id="ex7-app">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-javascript">// app.js — plain Express app, no OTel imports needed here
+import express from 'express';
+
+const PORT = parseInt(process.env.PORT || '8080');
+const app = express();
+
+function getRandomNumber(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
+app.get('/rolldice', (req, res) => {
+  res.send(getRandomNumber(1, 6).toString());
+});
+
+app.listen(PORT, () => {
+  console.log(`Listening on http://localhost:${PORT}`);
+});</code></pre>
+            </div>
+            <div class="tab-pane" id="ex7-run">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-bash"># Run with --import to load instrumentation before app code
+node --import ./instrumentation.mjs app.js
+
+# Hit the endpoint several times
+curl http://localhost:8080/rolldice
+
+# Watch the ConsoleSpanExporter output — you'll see:
+# - A span for each GET /rolldice request
+# - Span attributes: http.method, http.route, http.status_code, etc.
+# - Metrics after the metric reader interval fires
+
+# For debugging, add to instrumentation.mjs:
+# import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
+# diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);</code></pre>
+            </div>
+          </div>
+          <div class="challenge-box">
+            <div class="challenge-label en">🏆 Challenge</div>
+            <div class="challenge-label es">🏆 Desafío</div>
+            <div class="challenge-text en">Add a second route <code>/rolldice/:sides</code> that accepts a custom number of dice sides. Add a manual span inside it that records <code>dice.sides</code> as an attribute. Verify the child span appears nested under the auto-generated HTTP span.</div>
+            <div class="challenge-text es">Agregar una segunda ruta <code>/rolldice/:sides</code> que acepte un número personalizado de caras. Añadir un span manual que registre <code>dice.sides</code> como atributo. Verificar que el span hijo aparece anidado bajo el span HTTP auto-generado.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 8 -->
+      <div class="ex" id="ex8">
+        <div class="ex-header" onclick="toggleEx('ex8')">
+          <div class="ex-num">8</div>
+          <div class="ex-title-wrap">
+            <div class="ex-title en">Span Decorator, Links &amp; Async Metrics (Official Python Instrumentation Docs)</div>
+            <div class="ex-title es">Decorador de Span, Links y Métricas Asíncronas (Docs Oficiales de Python)</div>
+            <div class="ex-meta"><span class="step-badge badge-intermediate">Intermediate</span> &nbsp;~20 min &nbsp;·&nbsp; <a href="https://opentelemetry.io/docs/languages/python/instrumentation/" target="_blank" style="color:var(--cyan-l); font-size:.8rem;">opentelemetry.io ↗</a></div>
+          </div>
+          <span class="ex-chevron">▶</span>
+        </div>
+        <div class="ex-body">
+          <div class="ex-objective en"><strong>Objective:</strong> Use the <code>@tracer.start_as_current_span</code> decorator to instrument functions without boilerplate, create Span Links between independent operations, and set up an async Observable Gauge for external metric sources.</div>
+          <div class="ex-objective es"><strong>Objetivo:</strong> Usar el decorador <code>@tracer.start_as_current_span</code> para instrumentar funciones sin boilerplate, crear Span Links entre operaciones independientes, y configurar un Observable Gauge asíncrono para fuentes de métricas externas.</div>
+          <div class="code-block" style="margin-top:1rem;">
+            <div class="tab-bar">
+              <button class="tab-btn active" onclick="switchTab(this,'ex8','decorator')">Span Decorator</button>
+              <button class="tab-btn" onclick="switchTab(this,'ex8','links')">Span Links</button>
+              <button class="tab-btn" onclick="switchTab(this,'ex8','gauge')">Async Gauge</button>
+            </div>
+            <div class="tab-pane active" id="ex8-decorator">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-python">from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+
+provider = TracerProvider()
+provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+trace.set_tracer_provider(provider)
+
+# The tracer must be module-level for the decorator to work
+tracer = trace.get_tracer("exercise-8")
+
+# Using the decorator is equivalent to wrapping the body in
+# with tracer.start_as_current_span("do_work"): ...
+@tracer.start_as_current_span("validate-input")
+def validate_input(data: dict) -> bool:
+    # The span is automatically started and closed around this function
+    span = trace.get_current_span()
+    span.set_attribute("input.keys", list(data.keys()))
+    return all(v is not None for v in data.values())
+
+@tracer.start_as_current_span("process-data")
+def process_data(data: dict):
+    span = trace.get_current_span()
+    if validate_input(data):        # validate-input span is a CHILD of process-data
+        span.set_attribute("validation.passed", True)
+        return {"result": "processed"}
+    raise ValueError("Invalid input")
+
+process_data({"user": "Alice", "amount": 42})</code></pre>
+            </div>
+            <div class="tab-pane" id="ex8-links">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-python">from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+
+provider = TracerProvider()
+provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+trace.set_tracer_provider(provider)
+tracer = trace.get_tracer("exercise-8-links")
+
+# Span Links: causally associate two independent traces
+# Use case: an async job triggered by an HTTP request
+
+# Step 1: original request creates a span
+with tracer.start_as_current_span("http-request") as request_span:
+    # Capture the context to link from the async job
+    request_ctx = request_span.get_span_context()
+    link_to_request = trace.Link(request_ctx)
+    print(f"Request span ID: {hex(request_ctx.span_id)}")
+
+# Step 2: async job runs in a DIFFERENT trace but links back
+with tracer.start_as_current_span("async-job", links=[link_to_request]) as job_span:
+    # job_span is NOT a child of request_span — it's in its own trace
+    # but it carries a Link pointing to the request span
+    job_span.set_attribute("job.type", "email-notification")
+    print("Async job executed, linked to original request")
+
+# In Jaeger/Zipkin you'll see the Link visualised as a reference arrow</code></pre>
+            </div>
+            <div class="tab-pane" id="ex8-gauge">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-python"># Asynchronous Observable Gauge — from official OTel Python docs
+# Use case: poll an external source periodically without blocking
+from typing import Iterable
+import random
+from opentelemetry import metrics
+from opentelemetry.metrics import CallbackOptions, Observation
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import (
+    ConsoleMetricExporter, PeriodicExportingMetricReader
+)
+
+reader = PeriodicExportingMetricReader(
+    ConsoleMetricExporter(), export_interval_millis=5000
+)
+provider = MeterProvider(metric_readers=[reader])
+metrics.set_meter_provider(provider)
+meter = metrics.get_meter("exercise-8-gauge")
+
+# Callback: called by the SDK every export interval
+def cpu_usage_callback(options: CallbackOptions) -> Iterable[Observation]:
+    # In production this would read from /proc/stat or psutil
+    for core_id in range(4):
+        usage = random.uniform(0.1, 0.95)
+        yield Observation(usage, {"cpu.core": str(core_id)})
+
+meter.create_observable_gauge(
+    "system.cpu.utilization",
+    callbacks=[cpu_usage_callback],
+    unit="1",
+    description="CPU utilization per core (0.0–1.0)",
+)
+
+import time
+print("Collecting metrics for 10 seconds...")
+time.sleep(10)   # reader fires at 5s and 10s</code></pre>
+            </div>
+          </div>
+          <div class="challenge-box">
+            <div class="challenge-label en">🏆 Challenge</div>
+            <div class="challenge-label es">🏆 Desafío</div>
+            <div class="challenge-text en">Stack multiple decorators: add <code>@tracer.start_as_current_span</code> to three nested functions and observe how the span tree looks in the console output. Then replace one callback gauge with an <strong>UpDownCounter</strong> to track active connections.</div>
+            <div class="challenge-text es">Apilar múltiples decoradores: añadir <code>@tracer.start_as_current_span</code> a tres funciones anidadas y observar el árbol de spans en la consola. Luego reemplazar un gauge de callback con un <strong>UpDownCounter</strong> para rastrear conexiones activas.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 9 -->
+      <div class="ex" id="ex9">
+        <div class="ex-header" onclick="toggleEx('ex9')">
+          <div class="ex-num">9</div>
+          <div class="ex-title-wrap">
+            <div class="ex-title en">OTel Logging — Correlate Logs with Traces (Official Python Docs)</div>
+            <div class="ex-title es">Logging con OTel — Correlacionar Logs con Trazas (Docs Oficiales Python)</div>
+            <div class="ex-meta"><span class="step-badge badge-intermediate">Intermediate</span> &nbsp;~20 min &nbsp;·&nbsp; <a href="https://opentelemetry.io/docs/languages/python/instrumentation/" target="_blank" style="color:var(--cyan-l); font-size:.8rem;">opentelemetry.io ↗</a></div>
+          </div>
+          <span class="ex-chevron">▶</span>
+        </div>
+        <div class="ex-body">
+          <div class="ex-objective en"><strong>Objective:</strong> Wire Python's built-in <code>logging</code> module into OTel's Log SDK so every log record is automatically stamped with the current <code>trace_id</code> and <code>span_id</code> — enabling log-to-trace correlation in any observability backend.</div>
+          <div class="ex-objective es"><strong>Objetivo:</strong> Conectar el módulo <code>logging</code> de Python con el SDK de Logs de OTel para que cada registro de log sea automáticamente marcado con el <code>trace_id</code> y <code>span_id</code> actuales — habilitando correlación log-a-traza en cualquier backend.</div>
+          <div class="code-block" style="margin-top:1rem;">
+            <div class="tab-bar">
+              <button class="tab-btn active" onclick="switchTab(this,'ex9','setup')">Setup</button>
+              <button class="tab-btn" onclick="switchTab(this,'ex9','full')">Full Example</button>
+            </div>
+            <div class="tab-pane active" id="ex9-setup">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-bash"># Install OTel logging SDK
+pip install opentelemetry-sdk opentelemetry-api</code></pre>
+            </div>
+            <div class="tab-pane" id="ex9-full">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-python">import logging
+from opentelemetry import trace
+from opentelemetry._logs import set_logger_provider
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import (
+    BatchLogRecordProcessor, ConsoleLogRecordExporter
+)
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+
+# 1. Set up Trace provider
+trace_provider = TracerProvider()
+trace_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+trace.set_tracer_provider(trace_provider)
+
+# 2. Set up Log provider
+log_provider = LoggerProvider()
+log_provider.add_log_record_processor(
+    BatchLogRecordProcessor(ConsoleLogRecordExporter())
+)
+set_logger_provider(log_provider)
+
+# 3. Bridge Python logging into OTel
+handler = LoggingHandler(level=logging.INFO, logger_provider=log_provider)
+logging.basicConfig(handlers=[handler], level=logging.INFO)
+logger = logging.getLogger("exercise-9")
+
+tracer = trace.get_tracer("exercise-9")
+
+# 4. Any log emitted INSIDE a span is automatically correlated
+with tracer.start_as_current_span("process-payment") as span:
+    span.set_attribute("payment.amount", 49.99)
+
+    logger.info("Payment processing started")     # carries trace_id + span_id!
+    logger.warning("Applying discount code")
+
+    with tracer.start_as_current_span("charge-card"):
+        logger.info("Charging card")              # span_id = charge-card span
+
+    logger.info("Payment completed successfully")
+
+# The console output for each log record will include:
+# "trace_id": "...", "span_id": "...", "trace_flags": 1
+# — the same trace_id as the span above!</code></pre>
+            </div>
+          </div>
+          <div class="challenge-box">
+            <div class="challenge-label en">🏆 Challenge</div>
+            <div class="challenge-label es">🏆 Desafío</div>
+            <div class="challenge-text en">Replace <code>ConsoleLogRecordExporter</code> with <code>OTLPLogExporter</code> and send logs to the OTel Collector from Exercise 4. Then configure the Collector to route logs to <strong>Loki</strong> (add a <code>loki</code> exporter). Check <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/lokiexporter" target="_blank" style="color:var(--cyan-l)">lokiexporter docs</a>.</div>
+            <div class="challenge-text es">Reemplazar <code>ConsoleLogRecordExporter</code> por <code>OTLPLogExporter</code> y enviar logs al Colector OTel del Ejercicio 4. Luego configurar el Colector para enrutar logs a <strong>Loki</strong> (añadir un exportador <code>loki</code>). Consulta los <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/lokiexporter" target="_blank" style="color:var(--cyan-l)">docs del lokiexporter</a>.</div>
           </div>
         </div>
       </div>
