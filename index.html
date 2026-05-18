@@ -1,11 +1,1238 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="OpenTelemetry: Zero to Hero – hands-on exercises and examples" />
   <title>OpenTelemetry: Zero to Hero</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+
+  <style>
+    :root {
+      --bg:       #0d0d1a;
+      --surface:  #151528;
+      --surface2: #1e1e38;
+      --border:   #2a2a4a;
+      --primary:  #7c3aed;
+      --primary-l:#a78bfa;
+      --cyan:     #06b6d4;
+      --cyan-l:   #67e8f9;
+      --text:     #e2e8f0;
+      --muted:    #94a3b8;
+      --dim:      #64748b;
+      --green:    #10b981;
+      --yellow:   #f59e0b;
+      --red:      #ef4444;
+      --radius:   12px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Language toggle ── */
+    html[data-lang="en"] .es { display: none !important; }
+    html[data-lang="es"] .en { display: none !important; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(13,13,26,.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1100px; margin: auto;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .9rem 1.5rem;
+      gap: 1rem;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: .6rem;
+      font-weight: 700; font-size: 1.05rem; text-decoration: none; color: var(--text);
+    }
+    .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 8px var(--primary); }
+    .nav-links { display: flex; gap: 1.4rem; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: .9rem; transition: color .2s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-right { display: flex; align-items: center; gap: .8rem; }
+    .lang-btn {
+      cursor: pointer; border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text); border-radius: 8px; padding: .35rem .85rem;
+      font-size: .85rem; font-family: inherit; transition: border-color .2s, background .2s;
+    }
+    .lang-btn:hover { border-color: var(--primary); background: var(--surface); }
+    .gh-link {
+      color: var(--muted); text-decoration: none; font-size: .85rem;
+      border: 1px solid var(--border); border-radius: 8px; padding: .35rem .85rem;
+      transition: color .2s, border-color .2s;
+    }
+    .gh-link:hover { color: var(--text); border-color: var(--primary-l); }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative; overflow: hidden;
+      padding: 6rem 1.5rem 5rem;
+      text-align: center;
+      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,58,237,.25) 0%, transparent 70%);
+    }
+    .hero-badge {
+      display: inline-block; margin-bottom: 1.5rem;
+      background: rgba(124,58,237,.15); border: 1px solid rgba(124,58,237,.4);
+      border-radius: 100px; padding: .3rem 1rem; font-size: .8rem; color: var(--primary-l);
+    }
+    .hero h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); font-weight: 700; line-height: 1.15; margin-bottom: 1.2rem; }
+    .grad { background: linear-gradient(135deg, var(--primary-l), var(--cyan-l)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero-sub { max-width: 620px; margin: 0 auto 2.5rem; color: var(--muted); font-size: 1.1rem; }
+    .hero-stats { display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap; margin-bottom: 2.5rem; }
+    .stat { display: flex; flex-direction: column; align-items: center; }
+    .stat-n { font-size: 2rem; font-weight: 700; color: var(--primary-l); }
+    .stat-l { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .hero-ctas { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; padding: .7rem 1.6rem; border-radius: var(--radius);
+      font-size: .95rem; font-weight: 600; text-decoration: none; transition: opacity .2s, transform .15s;
+    }
+    .btn:hover { opacity: .88; transform: translateY(-1px); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+
+    /* ── SECTION COMMONS ── */
+    section { padding: 4rem 1.5rem; }
+    .container { max-width: 1100px; margin: auto; }
+    .section-label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--primary-l); margin-bottom: .5rem; }
+    .section-title { font-size: clamp(1.5rem, 3vw, 2.1rem); font-weight: 700; margin-bottom: .75rem; }
+    .section-sub { color: var(--muted); max-width: 600px; margin-bottom: 2.5rem; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* ── PATH STEPS ── */
+    .path { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .steps { display: flex; gap: 0; overflow-x: auto; }
+    .step {
+      flex: 1; min-width: 180px; padding: 1.5rem 1.2rem;
+      display: flex; flex-direction: column; gap: .4rem;
+      border-right: 1px solid var(--border); position: relative; cursor: default;
+    }
+    .step:last-child { border-right: none; }
+    .step-num { font-size: .7rem; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; }
+    .step-title { font-weight: 600; font-size: .95rem; }
+    .step-sub { font-size: .8rem; color: var(--muted); }
+    .step-badge {
+      display: inline-block; font-size: .65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; padding: .15rem .5rem; border-radius: 100px; margin-top: .2rem; width: fit-content;
+    }
+    .badge-beginner { background: rgba(16,185,129,.15); color: var(--green); }
+    .badge-intermediate { background: rgba(245,158,11,.15); color: var(--yellow); }
+    .badge-advanced { background: rgba(239,68,68,.15); color: var(--red); }
+
+    /* ── MODULES ── */
+    .module { border-bottom: 1px solid var(--border); }
+    .module:nth-child(even) { background: var(--surface); }
+    .module-header { display: flex; align-items: flex-start; gap: 1.2rem; margin-bottom: 2rem; }
+    .module-icon {
+      width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; flex-shrink: 0;
+    }
+    .icon-purple { background: rgba(124,58,237,.2); }
+    .icon-cyan   { background: rgba(6,182,212,.2); }
+    .icon-green  { background: rgba(16,185,129,.2); }
+    .icon-yellow { background: rgba(245,158,11,.2); }
+    .module-meta { font-size: .8rem; color: var(--dim); margin-bottom: .25rem; }
+    .module-title { font-size: 1.5rem; font-weight: 700; margin-bottom: .35rem; }
+    .module-desc { color: var(--muted); }
+
+    /* ── CARDS GRID ── */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .card {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.25rem; transition: border-color .2s;
+    }
+    .card:hover { border-color: var(--primary); }
+    .card-icon { font-size: 1.6rem; margin-bottom: .6rem; }
+    .card-title { font-weight: 600; margin-bottom: .4rem; }
+    .card-text { font-size: .88rem; color: var(--muted); }
+
+    /* ── CODE TABS ── */
+    .code-block { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 1.5rem 0; }
+    .tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--surface); }
+    .tab-btn {
+      padding: .55rem 1.1rem; font-size: .83rem; font-weight: 500; cursor: pointer;
+      background: none; border: none; color: var(--muted); font-family: inherit;
+      border-bottom: 2px solid transparent; transition: color .2s, border-color .2s;
+    }
+    .tab-btn.active { color: var(--primary-l); border-bottom-color: var(--primary); }
+    .tab-pane { display: none; position: relative; }
+    .tab-pane.active { display: block; }
+    .tab-pane pre { margin: 0 !important; border-radius: 0 !important; border: none !important; max-height: 440px; overflow-y: auto; }
+    .copy-btn {
+      position: absolute; top: .6rem; right: .7rem;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--muted); border-radius: 6px; padding: .25rem .6rem;
+      font-size: .75rem; cursor: pointer; font-family: inherit; transition: color .2s, border-color .2s;
+    }
+    .copy-btn:hover { color: var(--text); border-color: var(--primary-l); }
+
+    /* ── EXERCISES ── */
+    .exercises-section { background: var(--surface); }
+    .exercise-list { display: flex; flex-direction: column; gap: 1.2rem; }
+    .ex {
+      background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; transition: border-color .2s;
+    }
+    .ex:hover { border-color: var(--primary); }
+    .ex-header {
+      display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem;
+      cursor: pointer; user-select: none;
+    }
+    .ex-num {
+      width: 36px; height: 36px; border-radius: 50%; background: rgba(124,58,237,.2);
+      color: var(--primary-l); font-weight: 700; font-size: .9rem;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .ex-title-wrap { flex: 1; }
+    .ex-title { font-weight: 600; font-size: 1rem; }
+    .ex-meta { font-size: .8rem; color: var(--muted); margin-top: .1rem; }
+    .ex-chevron { color: var(--dim); transition: transform .25s; font-size: 1rem; }
+    .ex.open .ex-chevron { transform: rotate(90deg); }
+    .ex-body { display: none; padding: 0 1.5rem 1.5rem; border-top: 1px solid var(--border); }
+    .ex.open .ex-body { display: block; }
+    .ex-objective { background: rgba(124,58,237,.08); border-left: 3px solid var(--primary); padding: .75rem 1rem; border-radius: 0 8px 8px 0; margin: 1rem 0; font-size: .92rem; }
+    .steps-list { padding-left: 1.2rem; color: var(--muted); font-size: .9rem; }
+    .steps-list li { margin-bottom: .35rem; }
+    .steps-list li strong { color: var(--text); }
+    .challenge-box { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.3); border-radius: var(--radius); padding: 1rem; margin-top: 1rem; }
+    .challenge-label { font-size: .75rem; font-weight: 700; color: var(--yellow); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .4rem; }
+    .challenge-text { font-size: .9rem; color: var(--muted); }
+
+    /* ── RESOURCES ── */
+    .repo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .repo-card {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.25rem; text-decoration: none; color: inherit; display: block; transition: border-color .2s, transform .15s;
+    }
+    .repo-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .repo-top { display: flex; align-items: center; gap: .6rem; margin-bottom: .6rem; }
+    .repo-icon { font-size: 1.2rem; }
+    .repo-name { font-weight: 600; font-size: .95rem; }
+    .repo-desc { font-size: .85rem; color: var(--muted); margin-bottom: .8rem; }
+    .repo-meta { display: flex; gap: 1rem; font-size: .8rem; color: var(--dim); }
+    .repo-stars::before { content: "⭐ "; }
+    .repo-lang::before { content: "● "; color: var(--cyan); }
+    .links-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .75rem; margin-top: 2rem; }
+    .doc-link {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1rem; text-decoration: none; color: var(--text); font-size: .9rem;
+      display: flex; align-items: center; gap: .6rem; transition: border-color .2s;
+    }
+    .doc-link:hover { border-color: var(--cyan); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--surface); border-top: 1px solid var(--border);
+      text-align: center; padding: 2rem 1.5rem; color: var(--dim); font-size: .85rem;
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .steps { flex-direction: column; }
+      .step { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
 </head>
 <body>
-  <h1>Hello, GitHub Pages!</h1>
+
+<!-- ════════════════════════════════ NAV ════════════════════════════════ -->
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#">
+      <div class="logo-dot"></div>
+      OTel Zero to Hero
+    </a>
+    <div class="nav-links">
+      <a href="#path"><span class="en">Modules</span><span class="es">Módulos</span></a>
+      <a href="#exercises"><span class="en">Exercises</span><span class="es">Ejercicios</span></a>
+      <a href="#resources"><span class="en">Resources</span><span class="es">Recursos</span></a>
+    </div>
+    <div class="nav-right">
+      <button class="lang-btn" id="langBtn" onclick="toggleLang()">🇪🇸 Español</button>
+      <a class="gh-link" href="https://github.com/open-telemetry" target="_blank">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════ HERO ════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-badge">Open Source · CNCF Project · Vendor-Neutral</div>
+  <h1>
+    <span class="en">OpenTelemetry<br><span class="grad">Zero to Hero</span></span>
+    <span class="es">OpenTelemetry<br><span class="grad">De Cero a Héroe</span></span>
+  </h1>
+  <p class="hero-sub en">Master observability — traces, metrics &amp; logs — with hands-on exercises inspired by top GitHub repositories.</p>
+  <p class="hero-sub es">Domina la observabilidad — trazas, métricas y logs — con ejercicios prácticos inspirados en los mejores repositorios de GitHub.</p>
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-n">4</span><span class="stat-l en">Modules</span><span class="stat-l es">Módulos</span></div>
+    <div class="stat"><span class="stat-n">5</span><span class="stat-l en">Exercises</span><span class="stat-l es">Ejercicios</span></div>
+    <div class="stat"><span class="stat-n">3</span><span class="stat-l en">Signals</span><span class="stat-l es">Señales</span></div>
+    <div class="stat"><span class="stat-n">2</span><span class="stat-l en">Languages</span><span class="stat-l es">Idiomas</span></div>
+  </div>
+  <div class="hero-ctas">
+    <a class="btn btn-primary" href="#path"><span class="en">Start Learning</span><span class="es">Empezar</span></a>
+    <a class="btn btn-outline" href="https://github.com/open-telemetry/opentelemetry-demo" target="_blank">Demo Repo ↗</a>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ LEARNING PATH ════════════════════════════════ -->
+<section id="path" class="path">
+  <div class="steps">
+    <div class="step">
+      <span class="step-num en">Step 01</span><span class="step-num es">Paso 01</span>
+      <span class="step-title en">Foundations</span><span class="step-title es">Fundamentos</span>
+      <span class="step-sub en">Observability &amp; core concepts</span><span class="step-sub es">Observabilidad y conceptos clave</span>
+      <span class="step-badge badge-beginner">Beginner</span>
+    </div>
+    <div class="step">
+      <span class="step-num en">Step 02</span><span class="step-num es">Paso 02</span>
+      <span class="step-title en">First Steps</span><span class="step-title es">Primeros Pasos</span>
+      <span class="step-sub en">SDK setup &amp; first trace</span><span class="step-sub es">SDK y primera traza</span>
+      <span class="step-badge badge-beginner">Beginner</span>
+    </div>
+    <div class="step">
+      <span class="step-num en">Step 03</span><span class="step-num es">Paso 03</span>
+      <span class="step-title en">Going Deeper</span><span class="step-title es">Profundizando</span>
+      <span class="step-sub en">Metrics, logs &amp; collector</span><span class="step-sub es">Métricas, logs y colector</span>
+      <span class="step-badge badge-intermediate">Intermediate</span>
+    </div>
+    <div class="step">
+      <span class="step-num en">Step 04</span><span class="step-num es">Paso 04</span>
+      <span class="step-title en">Production Ready</span><span class="step-title es">Listo para Producción</span>
+      <span class="step-sub en">Sampling, exporters &amp; propagation</span><span class="step-sub es">Muestreo, exportadores y propagación</span>
+      <span class="step-badge badge-advanced">Advanced</span>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ MODULE 1 ════════════════════════════════ -->
+<section id="module-1" class="module">
+  <div class="container">
+    <div class="module-header">
+      <div class="module-icon icon-purple">🔭</div>
+      <div>
+        <div class="module-meta en">Module 01 · Foundations</div>
+        <div class="module-meta es">Módulo 01 · Fundamentos</div>
+        <h2 class="module-title en">What is OpenTelemetry?</h2>
+        <h2 class="module-title es">¿Qué es OpenTelemetry?</h2>
+        <p class="module-desc en">OpenTelemetry (OTel) is a CNCF project that provides a vendor-neutral, open-standard framework for collecting <strong>traces</strong>, <strong>metrics</strong>, and <strong>logs</strong> from your applications — and routing them to any backend.</p>
+        <p class="module-desc es">OpenTelemetry (OTel) es un proyecto CNCF que provee un framework de estándar abierto y neutral para recolectar <strong>trazas</strong>, <strong>métricas</strong> y <strong>logs</strong> de tus aplicaciones, y enviarlos a cualquier backend.</p>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">🔗</div>
+        <div class="card-title en">Traces</div>
+        <div class="card-title es">Trazas</div>
+        <p class="card-text en">Track the journey of a request across microservices. Made of <em>spans</em> — each representing a unit of work.</p>
+        <p class="card-text es">Seguimiento del recorrido de una solicitud a través de microservicios. Compuestas de <em>spans</em>, cada uno representando una unidad de trabajo.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <div class="card-title en">Metrics</div>
+        <div class="card-title es">Métricas</div>
+        <p class="card-text en">Numerical measurements over time: counters, gauges, and histograms. Ideal for dashboards and alerts.</p>
+        <p class="card-text es">Mediciones numéricas en el tiempo: contadores, indicadores e histogramas. Ideales para dashboards y alertas.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📋</div>
+        <div class="card-title en">Logs</div>
+        <div class="card-title es">Logs</div>
+        <p class="card-text en">Timestamped records of events. OTel correlates logs with traces and metrics automatically.</p>
+        <p class="card-text es">Registros de eventos con marca de tiempo. OTel correlaciona logs con trazas y métricas automáticamente.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏗️</div>
+        <div class="card-title en">Architecture</div>
+        <div class="card-title es">Arquitectura</div>
+        <p class="card-text en"><strong>API</strong> → <strong>SDK</strong> → <strong>Collector</strong> → <strong>Backend</strong>. The Collector acts as a vendor-agnostic pipeline.</p>
+        <p class="card-text es"><strong>API</strong> → <strong>SDK</strong> → <strong>Colector</strong> → <strong>Backend</strong>. El Colector funciona como pipeline agnóstico del proveedor.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ MODULE 2 ════════════════════════════════ -->
+<section id="module-2" class="module">
+  <div class="container">
+    <div class="module-header">
+      <div class="module-icon icon-cyan">🚀</div>
+      <div>
+        <div class="module-meta en">Module 02 · First Steps</div>
+        <div class="module-meta es">Módulo 02 · Primeros Pasos</div>
+        <h2 class="module-title en">Your First Trace</h2>
+        <h2 class="module-title es">Tu Primera Traza</h2>
+        <p class="module-desc en">Install the SDK and emit your first span to the console in under 5 minutes.</p>
+        <p class="module-desc es">Instala el SDK y emite tu primer span a la consola en menos de 5 minutos.</p>
+      </div>
+    </div>
+
+    <p style="color:var(--muted); margin-bottom:.5rem;" class="en"><strong style="color:var(--text)">Install dependencies:</strong></p>
+    <p style="color:var(--muted); margin-bottom:.5rem;" class="es"><strong style="color:var(--text)">Instalar dependencias:</strong></p>
+
+    <div class="code-block">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab(this,'install','py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(this,'install','js')">Node.js</button>
+      </div>
+      <div class="tab-pane active" id="install-py">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre><code class="language-bash">pip install opentelemetry-api opentelemetry-sdk</code></pre>
+      </div>
+      <div class="tab-pane" id="install-js">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre><code class="language-bash">npm install @opentelemetry/api @opentelemetry/sdk-node \
+  @opentelemetry/sdk-trace-base \
+  @opentelemetry/resources \
+  @opentelemetry/semantic-conventions</code></pre>
+      </div>
+    </div>
+
+    <p style="color:var(--muted); margin:.5rem 0;" class="en"><strong style="color:var(--text)">Create your first span:</strong></p>
+    <p style="color:var(--muted); margin:.5rem 0;" class="es"><strong style="color:var(--text)">Crear tu primer span:</strong></p>
+
+    <div class="code-block">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab(this,'first','py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(this,'first','js')">Node.js</button>
+      </div>
+      <div class="tab-pane active" id="first-py">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre><code class="language-python">from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor, ConsoleSpanExporter
+)
+
+# 1. Set up the provider
+provider = TracerProvider()
+provider.add_span_processor(
+    BatchSpanProcessor(ConsoleSpanExporter())
+)
+trace.set_tracer_provider(provider)
+
+# 2. Get a tracer
+tracer = trace.get_tracer(__name__)
+
+# 3. Create a span
+with tracer.start_as_current_span("my-first-span") as span:
+    span.set_attribute("user.name", "OTel Hero")
+    span.set_attribute("operation.type", "greeting")
+    print("Hello, OpenTelemetry! 🎉")</code></pre>
+      </div>
+      <div class="tab-pane" id="first-js">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre><code class="language-javascript">const { NodeSDK } = require('@opentelemetry/sdk-node');
+const { ConsoleSpanExporter } = require('@opentelemetry/sdk-trace-base');
+const { resourceFromAttributes } = require('@opentelemetry/resources');
+const { ATTR_SERVICE_NAME } = require('@opentelemetry/semantic-conventions');
+const { trace } = require('@opentelemetry/api');
+
+// 1. Start the SDK
+const sdk = new NodeSDK({
+  resource: resourceFromAttributes({
+    [ATTR_SERVICE_NAME]: 'my-first-service',
+  }),
+  traceExporter: new ConsoleSpanExporter(),
+});
+sdk.start();
+
+// 2. Get a tracer and create a span
+const tracer = trace.getTracer('my-tracer');
+const span = tracer.startSpan('my-first-span');
+span.setAttribute('user.name', 'OTel Hero');
+span.setAttribute('operation.type', 'greeting');
+
+console.log('Hello, OpenTelemetry! 🎉');
+span.end();
+await sdk.shutdown();</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ MODULE 3 ════════════════════════════════ -->
+<section id="module-3" class="module">
+  <div class="container">
+    <div class="module-header">
+      <div class="module-icon icon-green">⚙️</div>
+      <div>
+        <div class="module-meta en">Module 03 · Going Deeper</div>
+        <div class="module-meta es">Módulo 03 · Profundizando</div>
+        <h2 class="module-title en">Metrics &amp; the Collector</h2>
+        <h2 class="module-title es">Métricas y el Colector</h2>
+        <p class="module-desc en">Record custom metrics and route telemetry through the OpenTelemetry Collector pipeline.</p>
+        <p class="module-desc es">Registra métricas personalizadas y enruta la telemetría a través del pipeline del Colector de OpenTelemetry.</p>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab(this,'metrics','py')">Python — Metrics</button>
+        <button class="tab-btn" onclick="switchTab(this,'metrics','yaml')">Collector Config</button>
+      </div>
+      <div class="tab-pane active" id="metrics-py">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre><code class="language-python">from opentelemetry import metrics
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import (
+    ConsoleMetricExporter, PeriodicExportingMetricReader
+)
+
+# Set up the meter provider
+reader = PeriodicExportingMetricReader(ConsoleMetricExporter())
+provider = MeterProvider(metric_readers=[reader])
+metrics.set_meter_provider(provider)
+
+# Create a meter
+meter = metrics.get_meter(__name__)
+
+# Counter: track how many requests we handle
+request_counter = meter.create_counter(
+    "http.requests",
+    unit="1",
+    description="Total HTTP requests"
+)
+
+# Histogram: track response duration
+duration_histogram = meter.create_histogram(
+    "http.request.duration",
+    unit="ms",
+    description="Request duration in milliseconds"
+)
+
+# Simulate recording measurements
+request_counter.add(1, {"method": "GET", "route": "/api/users"})
+duration_histogram.record(42, {"method": "GET", "status": "200"})</code></pre>
+      </div>
+      <div class="tab-pane" id="metrics-yaml">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre><code class="language-yaml"># otel-collector-config.yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+  memory_limiter:
+    limit_mib: 512
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug, otlp/jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug, prometheus]</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ MODULE 4 ════════════════════════════════ -->
+<section id="module-4" class="module">
+  <div class="container">
+    <div class="module-header">
+      <div class="module-icon icon-yellow">🛡️</div>
+      <div>
+        <div class="module-meta en">Module 04 · Production Ready</div>
+        <div class="module-meta es">Módulo 04 · Listo para Producción</div>
+        <h2 class="module-title en">Context Propagation &amp; Sampling</h2>
+        <h2 class="module-title es">Propagación de Contexto y Muestreo</h2>
+        <p class="module-desc en">Propagate trace context across service boundaries and control telemetry volume with sampling strategies.</p>
+        <p class="module-desc es">Propaga el contexto de traza entre servicios y controla el volumen de telemetría con estrategias de muestreo.</p>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab(this,'prod','py')">Python — Propagation</button>
+        <button class="tab-btn" onclick="switchTab(this,'prod','sampling')">Sampling</button>
+      </div>
+      <div class="tab-pane active" id="prod-py">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre><code class="language-python">import requests
+from opentelemetry import trace
+from opentelemetry.propagate import inject, extract
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
+# OTLP exporter — sends to the Collector
+provider = TracerProvider()
+provider.add_span_processor(
+    BatchSpanProcessor(OTLPSpanExporter(endpoint="http://localhost:4317"))
+)
+trace.set_tracer_provider(provider)
+tracer = trace.get_tracer(__name__)
+
+# SERVICE A — injects context into outgoing headers
+def call_service_b():
+    with tracer.start_as_current_span("service-a: call-b") as span:
+        headers = {}
+        inject(headers)           # <-- injects traceparent header
+        span.set_attribute("http.url", "http://service-b/data")
+        response = requests.get("http://service-b/data", headers=headers)
+        span.set_attribute("http.status_code", response.status_code)
+        return response.json()</code></pre>
+      </div>
+      <div class="tab-pane" id="prod-sampling">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre><code class="language-python">from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.sampling import (
+    ParentBased,
+    TraceIdRatioBased,
+    ALWAYS_ON,
+    ALWAYS_OFF,
+)
+
+# Sample 10% of root traces; respect parent decision for child spans
+sampler = ParentBased(
+    root=TraceIdRatioBased(0.1),           # 10% sampling rate
+    remote_parent_sampled=ALWAYS_ON,       # always sample if parent says so
+    remote_parent_not_sampled=ALWAYS_OFF,  # drop if parent dropped
+)
+
+provider = TracerProvider(sampler=sampler)
+
+# For tail-based sampling, configure it in the OTel Collector:
+# processors:
+#   tail_sampling:
+#     decision_wait: 10s
+#     policies:
+#       - name: errors-policy
+#         type: status_code
+#         status_code: {status_codes: [ERROR]}
+#       - name: slow-traces-policy
+#         type: latency
+#         latency: {threshold_ms: 500}</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ EXERCISES ════════════════════════════════ -->
+<section id="exercises" class="exercises-section">
+  <div class="container">
+    <div class="section-label en">Hands-on Practice</div>
+    <div class="section-label es">Práctica Hands-on</div>
+    <h2 class="section-title en">Exercises</h2>
+    <h2 class="section-title es">Ejercicios</h2>
+    <p class="section-sub en">Click any exercise to expand it. Work through them in order for the best learning experience.</p>
+    <p class="section-sub es">Haz clic en cualquier ejercicio para expandirlo. Trabájalos en orden para la mejor experiencia de aprendizaje.</p>
+
+    <div class="exercise-list">
+
+      <!-- EX 1 -->
+      <div class="ex" id="ex1">
+        <div class="ex-header" onclick="toggleEx('ex1')">
+          <div class="ex-num">1</div>
+          <div class="ex-title-wrap">
+            <div class="ex-title en">Hello, Spans! — Your First Instrumentation</div>
+            <div class="ex-title es">¡Hola, Spans! — Tu Primera Instrumentación</div>
+            <div class="ex-meta"><span class="step-badge badge-beginner">Beginner</span> &nbsp;~10 min</div>
+          </div>
+          <span class="ex-chevron">▶</span>
+        </div>
+        <div class="ex-body">
+          <div class="ex-objective en">
+            <strong>Objective:</strong> Create a TracerProvider, obtain a tracer, and emit a span with custom attributes to the console.
+          </div>
+          <div class="ex-objective es">
+            <strong>Objetivo:</strong> Crear un TracerProvider, obtener un tracer y emitir un span con atributos personalizados a la consola.
+          </div>
+          <p style="color:var(--muted); font-size:.9rem; margin: 1rem 0 .5rem;" class="en"><strong style="color:var(--text)">Steps:</strong></p>
+          <p style="color:var(--muted); font-size:.9rem; margin: 1rem 0 .5rem;" class="es"><strong style="color:var(--text)">Pasos:</strong></p>
+          <ol class="steps-list">
+            <li class="en"><strong>Install:</strong> <code>pip install opentelemetry-api opentelemetry-sdk</code></li>
+            <li class="es"><strong>Instalar:</strong> <code>pip install opentelemetry-api opentelemetry-sdk</code></li>
+            <li class="en"><strong>Create</strong> a file <code>exercise1.py</code> and set up a <code>TracerProvider</code> with a <code>ConsoleSpanExporter</code>.</li>
+            <li class="es"><strong>Crear</strong> un archivo <code>exercise1.py</code> y configurar un <code>TracerProvider</code> con un <code>ConsoleSpanExporter</code>.</li>
+            <li class="en"><strong>Use</strong> <code>tracer.start_as_current_span()</code> as a context manager.</li>
+            <li class="es"><strong>Usar</strong> <code>tracer.start_as_current_span()</code> como gestor de contexto.</li>
+            <li class="en"><strong>Add</strong> at least 3 attributes to the span using <code>span.set_attribute()</code>.</li>
+            <li class="es"><strong>Agregar</strong> al menos 3 atributos al span usando <code>span.set_attribute()</code>.</li>
+            <li class="en"><strong>Run</strong> and verify JSON output appears in the console.</li>
+            <li class="es"><strong>Ejecutar</strong> y verificar que aparece la salida JSON en la consola.</li>
+          </ol>
+          <div class="code-block" style="margin-top:1rem;">
+            <div class="tab-bar">
+              <button class="tab-btn active" onclick="switchTab(this,'ex1','solution')">Solution / Solución</button>
+            </div>
+            <div class="tab-pane active" id="ex1-solution">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-python">from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+
+provider = TracerProvider()
+provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+trace.set_tracer_provider(provider)
+
+tracer = trace.get_tracer("exercise-1")
+
+with tracer.start_as_current_span("greet-user") as span:
+    span.set_attribute("user.id", 42)
+    span.set_attribute("user.name", "Alice")
+    span.set_attribute("app.version", "1.0.0")
+    print("Greeting user...")
+    # Span closes automatically here</code></pre>
+            </div>
+          </div>
+          <div class="challenge-box">
+            <div class="challenge-label en">🏆 Challenge</div>
+            <div class="challenge-label es">🏆 Desafío</div>
+            <div class="challenge-text en">Create a <strong>nested span</strong> inside the first one. Check the console output — notice the <code>parent_id</code> field linking them.</div>
+            <div class="challenge-text es">Crear un <strong>span anidado</strong> dentro del primero. Revisa la salida de consola — observa el campo <code>parent_id</code> que los enlaza.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 2 -->
+      <div class="ex" id="ex2">
+        <div class="ex-header" onclick="toggleEx('ex2')">
+          <div class="ex-num">2</div>
+          <div class="ex-title-wrap">
+            <div class="ex-title en">Auto-Instrument a Web Server</div>
+            <div class="ex-title es">Auto-Instrumentar un Servidor Web</div>
+            <div class="ex-meta"><span class="step-badge badge-beginner">Beginner</span> &nbsp;~15 min</div>
+          </div>
+          <span class="ex-chevron">▶</span>
+        </div>
+        <div class="ex-body">
+          <div class="ex-objective en"><strong>Objective:</strong> Use auto-instrumentation to automatically trace every HTTP request to a Flask application — zero manual code changes.</div>
+          <div class="ex-objective es"><strong>Objetivo:</strong> Usar auto-instrumentación para trazar automáticamente cada solicitud HTTP a una aplicación Flask — sin cambios manuales en el código.</div>
+          <ol class="steps-list" style="margin-top:.8rem;">
+            <li class="en"><strong>Install:</strong> <code>pip install flask opentelemetry-instrumentation-flask opentelemetry-sdk</code></li>
+            <li class="es"><strong>Instalar:</strong> <code>pip install flask opentelemetry-instrumentation-flask opentelemetry-sdk</code></li>
+            <li class="en"><strong>Create</strong> a basic Flask app with at least two routes.</li>
+            <li class="es"><strong>Crear</strong> una app Flask básica con al menos dos rutas.</li>
+            <li class="en"><strong>Wrap</strong> it with <code>FlaskInstrumentor().instrument_app(app)</code>.</li>
+            <li class="es"><strong>Envolver</strong> con <code>FlaskInstrumentor().instrument_app(app)</code>.</li>
+            <li class="en"><strong>Make</strong> a few requests and inspect the console spans.</li>
+            <li class="es"><strong>Realizar</strong> algunas solicitudes e inspeccionar los spans en la consola.</li>
+          </ol>
+          <div class="code-block" style="margin-top:1rem;">
+            <div class="tab-bar">
+              <button class="tab-btn active" onclick="switchTab(this,'ex2','solution')">Solution / Solución</button>
+            </div>
+            <div class="tab-pane active" id="ex2-solution">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-python">from flask import Flask, jsonify
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+
+# Set up OTel
+provider = TracerProvider()
+provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+trace.set_tracer_provider(provider)
+
+app = Flask(__name__)
+
+# Auto-instrument Flask — all routes are traced automatically
+FlaskInstrumentor().instrument_app(app)
+
+@app.route("/")
+def index():
+    return jsonify({"message": "Hello, OTel!"})
+
+@app.route("/users/&lt;int:user_id&gt;")
+def get_user(user_id):
+    return jsonify({"user_id": user_id, "name": "Alice"})
+
+if __name__ == "__main__":
+    app.run(port=5000)</code></pre>
+            </div>
+          </div>
+          <div class="challenge-box">
+            <div class="challenge-label en">🏆 Challenge</div>
+            <div class="challenge-label es">🏆 Desafío</div>
+            <div class="challenge-text en">Add a manual span <em>inside</em> one of the route handlers to track a database query simulation. Notice how it becomes a child of the HTTP span.</div>
+            <div class="challenge-text es">Agregar un span manual <em>dentro</em> de uno de los manejadores de ruta para simular una consulta a base de datos. Observa cómo se convierte en hijo del span HTTP.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 3 -->
+      <div class="ex" id="ex3">
+        <div class="ex-header" onclick="toggleEx('ex3')">
+          <div class="ex-num">3</div>
+          <div class="ex-title-wrap">
+            <div class="ex-title en">Custom Attributes, Events &amp; Errors</div>
+            <div class="ex-title es">Atributos, Eventos y Errores Personalizados</div>
+            <div class="ex-meta"><span class="step-badge badge-intermediate">Intermediate</span> &nbsp;~20 min</div>
+          </div>
+          <span class="ex-chevron">▶</span>
+        </div>
+        <div class="ex-body">
+          <div class="ex-objective en"><strong>Objective:</strong> Enrich spans with semantic attributes, add events (logs on a span), and correctly record errors using <code>span.record_exception()</code>.</div>
+          <div class="ex-objective es"><strong>Objetivo:</strong> Enriquecer spans con atributos semánticos, añadir eventos (logs en un span) y registrar errores correctamente usando <code>span.record_exception()</code>.</div>
+          <div class="code-block" style="margin-top:1rem;">
+            <div class="tab-bar">
+              <button class="tab-btn active" onclick="switchTab(this,'ex3','py')">Python</button>
+              <button class="tab-btn" onclick="switchTab(this,'ex3','js')">Node.js</button>
+            </div>
+            <div class="tab-pane active" id="ex3-py">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-python">from opentelemetry import trace
+from opentelemetry.trace import StatusCode
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+
+provider = TracerProvider()
+provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+trace.set_tracer_provider(provider)
+tracer = trace.get_tracer(__name__)
+
+def process_order(order_id: str, amount: float):
+    with tracer.start_as_current_span("process-order") as span:
+        # Semantic attributes (follow OTel conventions)
+        span.set_attribute("order.id", order_id)
+        span.set_attribute("order.amount", amount)
+        span.set_attribute("order.currency", "USD")
+
+        # Add an event (a timestamped log on the span)
+        span.add_event("Order validation started")
+
+        try:
+            if amount &lt;= 0:
+                raise ValueError(f"Invalid amount: {amount}")
+
+            span.add_event("Payment processed", {"payment.method": "card"})
+            span.set_status(StatusCode.OK)
+            return {"status": "success"}
+
+        except Exception as e:
+            # Record the exception and mark span as error
+            span.record_exception(e)
+            span.set_status(StatusCode.ERROR, str(e))
+            return {"status": "error", "message": str(e)}
+
+process_order("ORD-001", 99.99)
+process_order("ORD-002", -5)    # triggers error path</code></pre>
+            </div>
+            <div class="tab-pane" id="ex3-js">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-javascript">const { trace, SpanStatusCode } = require('@opentelemetry/api');
+const { NodeSDK } = require('@opentelemetry/sdk-node');
+const { ConsoleSpanExporter } = require('@opentelemetry/sdk-trace-base');
+
+const sdk = new NodeSDK({ traceExporter: new ConsoleSpanExporter() });
+sdk.start();
+
+const tracer = trace.getTracer('exercise-3');
+
+async function processOrder(orderId, amount) {
+  const span = tracer.startSpan('process-order');
+  span.setAttribute('order.id', orderId);
+  span.setAttribute('order.amount', amount);
+  span.setAttribute('order.currency', 'USD');
+  span.addEvent('Order validation started');
+
+  try {
+    if (amount &lt;= 0) throw new Error(`Invalid amount: ${amount}`);
+    span.addEvent('Payment processed', { 'payment.method': 'card' });
+    span.setStatus({ code: SpanStatusCode.OK });
+    return { status: 'success' };
+  } catch (err) {
+    span.recordException(err);
+    span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
+    return { status: 'error', message: err.message };
+  } finally {
+    span.end();
+  }
+}
+
+processOrder('ORD-001', 99.99);
+processOrder('ORD-002', -5);</code></pre>
+            </div>
+          </div>
+          <div class="challenge-box">
+            <div class="challenge-label en">🏆 Challenge</div>
+            <div class="challenge-label es">🏆 Desafío</div>
+            <div class="challenge-text en">Add a <strong>Link</strong> between the order span and a previous span (simulate linking to an async job span using <code>links=[Link(ctx)]</code>).</div>
+            <div class="challenge-text es">Agregar un <strong>Link</strong> entre el span de orden y un span previo (simular el enlace a un span de trabajo asíncrono usando <code>links=[Link(ctx)]</code>).</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 4 -->
+      <div class="ex" id="ex4">
+        <div class="ex-header" onclick="toggleEx('ex4')">
+          <div class="ex-num">4</div>
+          <div class="ex-title-wrap">
+            <div class="ex-title en">Send to Jaeger via the OTel Collector</div>
+            <div class="ex-title es">Enviar a Jaeger a través del Colector OTel</div>
+            <div class="ex-meta"><span class="step-badge badge-intermediate">Intermediate</span> &nbsp;~25 min</div>
+          </div>
+          <span class="ex-chevron">▶</span>
+        </div>
+        <div class="ex-body">
+          <div class="ex-objective en"><strong>Objective:</strong> Run Jaeger + OTel Collector with Docker Compose and visualize your traces in the Jaeger UI.</div>
+          <div class="ex-objective es"><strong>Objetivo:</strong> Ejecutar Jaeger + Colector OTel con Docker Compose y visualizar tus trazas en la UI de Jaeger.</div>
+          <div class="code-block" style="margin-top:1rem;">
+            <div class="tab-bar">
+              <button class="tab-btn active" onclick="switchTab(this,'ex4','compose')">docker-compose.yml</button>
+              <button class="tab-btn" onclick="switchTab(this,'ex4','collector')">collector-config.yaml</button>
+              <button class="tab-btn" onclick="switchTab(this,'ex4','app')">App (Python)</button>
+            </div>
+            <div class="tab-pane active" id="ex4-compose">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-yaml">version: "3.8"
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OTLP gRPC (for collector -&gt; jaeger)
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-config.yaml"]
+    volumes:
+      - ./otel-config.yaml:/etc/otel-config.yaml
+    ports:
+      - "4318:4318"   # OTLP HTTP (your app -&gt; collector)
+    depends_on:
+      - jaeger</code></pre>
+            </div>
+            <div class="tab-pane" id="ex4-collector">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-yaml">receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger]</code></pre>
+            </div>
+            <div class="tab-pane" id="ex4-app">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-python">from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+
+# Point to the OTel Collector (HTTP)
+exporter = OTLPSpanExporter(endpoint="http://localhost:4318/v1/traces")
+provider = TracerProvider()
+provider.add_span_processor(BatchSpanProcessor(exporter))
+trace.set_tracer_provider(provider)
+
+tracer = trace.get_tracer("exercise-4")
+
+with tracer.start_as_current_span("jaeger-demo") as span:
+    span.set_attribute("demo", True)
+    with tracer.start_as_current_span("child-operation"):
+        import time; time.sleep(0.1)
+
+# Open http://localhost:16686 to see your trace in Jaeger!</code></pre>
+            </div>
+          </div>
+          <div class="challenge-box">
+            <div class="challenge-label en">🏆 Challenge</div>
+            <div class="challenge-label es">🏆 Desafío</div>
+            <div class="challenge-text en">Add a <code>filter</code> processor to the Collector that drops spans shorter than 10 ms. Check the <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor" target="_blank" style="color:var(--cyan-l)">filterprocessor docs</a>.</div>
+            <div class="challenge-text es">Agregar un procesador <code>filter</code> al Colector que descarte los spans menores a 10 ms. Consulta la <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor" target="_blank" style="color:var(--cyan-l)">documentación de filterprocessor</a>.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 5 -->
+      <div class="ex" id="ex5">
+        <div class="ex-header" onclick="toggleEx('ex5')">
+          <div class="ex-num">5</div>
+          <div class="ex-title-wrap">
+            <div class="ex-title en">Distributed Tracing Across Two Services</div>
+            <div class="ex-title es">Trazas Distribuidas Entre Dos Servicios</div>
+            <div class="ex-meta"><span class="step-badge badge-advanced">Advanced</span> &nbsp;~30 min</div>
+          </div>
+          <span class="ex-chevron">▶</span>
+        </div>
+        <div class="ex-body">
+          <div class="ex-objective en"><strong>Objective:</strong> Propagate trace context from Service A to Service B over HTTP so both appear as a single connected trace in Jaeger.</div>
+          <div class="ex-objective es"><strong>Objetivo:</strong> Propagar el contexto de traza desde el Servicio A al Servicio B vía HTTP para que ambos aparezcan como una sola traza conectada en Jaeger.</div>
+          <div class="code-block" style="margin-top:1rem;">
+            <div class="tab-bar">
+              <button class="tab-btn active" onclick="switchTab(this,'ex5','svcA')">Service A</button>
+              <button class="tab-btn" onclick="switchTab(this,'ex5','svcB')">Service B</button>
+            </div>
+            <div class="tab-pane active" id="ex5-svcA">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-python"># service_a.py — calls Service B, injects trace context
+import requests
+from opentelemetry import trace
+from opentelemetry.propagate import inject
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+
+provider = TracerProvider()
+provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+trace.set_tracer_provider(provider)
+
+# Auto-instrument the requests library to inject headers automatically
+RequestsInstrumentor().instrument()
+
+tracer = trace.get_tracer("service-a")
+
+with tracer.start_as_current_span("service-a: handle-request") as span:
+    span.set_attribute("service.name", "service-a")
+    # Headers injected automatically by RequestsInstrumentor
+    response = requests.get("http://localhost:5001/data")
+    print("Service B response:", response.json())</code></pre>
+            </div>
+            <div class="tab-pane" id="ex5-svcB">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code class="language-python"># service_b.py — receives context from Service A
+from flask import Flask, jsonify
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.wsgi import OpenTelemetryMiddleware
+
+provider = TracerProvider()
+provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+trace.set_tracer_provider(provider)
+
+app = Flask(__name__)
+FlaskInstrumentor().instrument_app(app)  # extracts traceparent header
+
+tracer = trace.get_tracer("service-b")
+
+@app.route("/data")
+def get_data():
+    # This span is a CHILD of Service A's span!
+    with tracer.start_as_current_span("service-b: fetch-data") as span:
+        span.set_attribute("db.system", "postgresql")
+        span.set_attribute("db.operation", "SELECT")
+        return jsonify({"result": "some data", "source": "service-b"})
+
+if __name__ == "__main__":
+    app.run(port=5001)
+# Run: python service_b.py
+# Then: python service_a.py</code></pre>
+            </div>
+          </div>
+          <div class="challenge-box">
+            <div class="challenge-label en">🏆 Challenge</div>
+            <div class="challenge-label es">🏆 Desafío</div>
+            <div class="challenge-text en">Add <strong>Baggage</strong> to pass a <code>user.id</code> value from Service A all the way through to Service B without adding it as a span attribute manually.</div>
+            <div class="challenge-text es">Agregar <strong>Baggage</strong> para pasar un valor <code>user.id</code> desde el Servicio A hasta el Servicio B sin añadirlo manualmente como atributo de span.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /exercise-list -->
+  </div>
+</section>
+
+<!-- ════════════════════════════════ RESOURCES ════════════════════════════════ -->
+<section id="resources">
+  <div class="container">
+    <div class="section-label en">Top GitHub Repositories</div>
+    <div class="section-label es">Mejores Repositorios de GitHub</div>
+    <h2 class="section-title en">Resources &amp; References</h2>
+    <h2 class="section-title es">Recursos y Referencias</h2>
+    <p class="section-sub en">Curated from the most-starred OpenTelemetry repositories and official documentation.</p>
+    <p class="section-sub es">Seleccionados de los repositorios de OpenTelemetry con más estrellas y la documentación oficial.</p>
+
+    <div class="repo-grid">
+      <a class="repo-card" href="https://github.com/open-telemetry/opentelemetry-demo" target="_blank">
+        <div class="repo-top"><span class="repo-icon">🏪</span><span class="repo-name">opentelemetry-demo</span></div>
+        <div class="repo-desc en">Astronomy Shop — a microservice demo showcasing OTel across 10+ languages. The gold standard for learning.</div>
+        <div class="repo-desc es">Astronomy Shop — demo de microservicios que muestra OTel en 10+ lenguajes. El estándar de referencia.</div>
+        <div class="repo-meta"><span class="repo-stars">3.1k</span><span class="repo-lang">TypeScript / Go / Python</span></div>
+      </a>
+      <a class="repo-card" href="https://github.com/open-telemetry/opentelemetry-collector" target="_blank">
+        <div class="repo-top"><span class="repo-icon">🔀</span><span class="repo-name">opentelemetry-collector</span></div>
+        <div class="repo-desc en">The official Collector — receive, process, and export telemetry data from any source to any backend.</div>
+        <div class="repo-desc es">El Colector oficial — recibe, procesa y exporta telemetría de cualquier fuente a cualquier backend.</div>
+        <div class="repo-meta"><span class="repo-stars">4.5k</span><span class="repo-lang">Go</span></div>
+      </a>
+      <a class="repo-card" href="https://github.com/open-telemetry/opentelemetry-python" target="_blank">
+        <div class="repo-top"><span class="repo-icon">🐍</span><span class="repo-name">opentelemetry-python</span></div>
+        <div class="repo-desc en">Official Python SDK. Stable traces &amp; metrics. Great docs and examples directory to learn from.</div>
+        <div class="repo-desc es">SDK oficial de Python. Trazas y métricas estables. Excelente documentación y directorio de ejemplos.</div>
+        <div class="repo-meta"><span class="repo-stars">2.4k</span><span class="repo-lang">Python</span></div>
+      </a>
+      <a class="repo-card" href="https://github.com/open-telemetry/opentelemetry-js" target="_blank">
+        <div class="repo-top"><span class="repo-icon">🟨</span><span class="repo-name">opentelemetry-js</span></div>
+        <div class="repo-desc en">Official JavaScript/TypeScript SDK. Supports Node.js &amp; browsers with auto-instrumentation packages.</div>
+        <div class="repo-desc es">SDK oficial de JavaScript/TypeScript. Soporta Node.js y navegadores con paquetes de auto-instrumentación.</div>
+        <div class="repo-meta"><span class="repo-stars">3.4k</span><span class="repo-lang">TypeScript</span></div>
+      </a>
+      <a class="repo-card" href="https://github.com/open-telemetry/opentelemetry-go" target="_blank">
+        <div class="repo-top"><span class="repo-icon">🐹</span><span class="repo-name">opentelemetry-go</span></div>
+        <div class="repo-desc en">Official Go SDK. Widely used in production for high-performance services. Excellent examples.</div>
+        <div class="repo-desc es">SDK oficial de Go. Ampliamente usado en producción para servicios de alto rendimiento. Excelentes ejemplos.</div>
+        <div class="repo-meta"><span class="repo-stars">5.2k</span><span class="repo-lang">Go</span></div>
+      </a>
+      <a class="repo-card" href="https://github.com/open-telemetry/opentelemetry-collector-contrib" target="_blank">
+        <div class="repo-top"><span class="repo-icon">🧩</span><span class="repo-name">collector-contrib</span></div>
+        <div class="repo-desc en">100+ community receivers, processors &amp; exporters. Find integrations for Kafka, AWS, GCP, Datadog &amp; more.</div>
+        <div class="repo-desc es">100+ receptores, procesadores y exportadores de la comunidad. Integraciones con Kafka, AWS, GCP, Datadog y más.</div>
+        <div class="repo-meta"><span class="repo-stars">3.0k</span><span class="repo-lang">Go</span></div>
+      </a>
+    </div>
+
+    <h3 style="margin-top:2.5rem; margin-bottom:.5rem; font-size:1.1rem;">
+      <span class="en">Official Documentation</span>
+      <span class="es">Documentación Oficial</span>
+    </h3>
+    <div class="links-grid">
+      <a class="doc-link" href="https://opentelemetry.io/docs/what-is-opentelemetry/" target="_blank">📖 <span class="en">What is OTel?</span><span class="es">¿Qué es OTel?</span></a>
+      <a class="doc-link" href="https://opentelemetry.io/docs/languages/python/getting-started/" target="_blank">🐍 <span class="en">Python Getting Started</span><span class="es">Inicio con Python</span></a>
+      <a class="doc-link" href="https://opentelemetry.io/docs/languages/js/getting-started/" target="_blank">🟨 <span class="en">JS Getting Started</span><span class="es">Inicio con JS</span></a>
+      <a class="doc-link" href="https://opentelemetry.io/docs/collector/" target="_blank">🔀 <span class="en">Collector Docs</span><span class="es">Docs del Colector</span></a>
+      <a class="doc-link" href="https://opentelemetry.io/docs/specs/semconv/" target="_blank">📐 <span class="en">Semantic Conventions</span><span class="es">Convenciones Semánticas</span></a>
+      <a class="doc-link" href="https://opentelemetry.io/docs/demo/" target="_blank">🏪 <span class="en">Demo Walkthrough</span><span class="es">Guía del Demo</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ FOOTER ════════════════════════════════ -->
+<footer>
+  <p>
+    Built with ❤️ for the OpenTelemetry community ·
+    <a href="https://opentelemetry.io" target="_blank">opentelemetry.io</a> ·
+    <a href="https://github.com/open-telemetry" target="_blank">GitHub</a> ·
+    Apache 2.0
+  </p>
+  <p style="margin-top:.4rem; font-size:.75rem;">
+    <span class="en">Content inspired by official OTel docs and top-rated community repositories.</span>
+    <span class="es">Contenido inspirado en la documentación oficial de OTel y los repositorios más valorados de la comunidad.</span>
+  </p>
+</footer>
+
+<!-- ════════════════════════════════ SCRIPTS ════════════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+
+<script>
+  // ── Language toggle ──────────────────────────────────────
+  function toggleLang() {
+    const html = document.documentElement;
+    const current = html.getAttribute('data-lang');
+    const next = current === 'en' ? 'es' : 'en';
+    html.setAttribute('data-lang', next);
+    html.setAttribute('lang', next);
+    document.getElementById('langBtn').textContent =
+      next === 'en' ? '🇪🇸 Español' : '🇺🇸 English';
+    localStorage.setItem('otel-lang', next);
+  }
+
+  (function restoreLang() {
+    const saved = localStorage.getItem('otel-lang');
+    if (saved && saved !== 'en') {
+      document.documentElement.setAttribute('data-lang', saved);
+      document.documentElement.setAttribute('lang', saved);
+      const btn = document.getElementById('langBtn');
+      if (btn) btn.textContent = '🇺🇸 English';
+    }
+  })();
+
+  // ── Code tabs ────────────────────────────────────────────
+  function switchTab(btn, group, tab) {
+    const bar = btn.closest('.tab-bar');
+    bar.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const block = btn.closest('.code-block');
+    block.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    const target = block.querySelector('#' + group + '-' + tab);
+    if (target) target.classList.add('active');
+  }
+
+  // ── Copy to clipboard ────────────────────────────────────
+  function copyCode(btn) {
+    const code = btn.closest('.tab-pane').querySelector('code');
+    navigator.clipboard.writeText(code.innerText).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 1800);
+    });
+  }
+
+  // ── Exercise accordion ───────────────────────────────────
+  function toggleEx(id) {
+    const el = document.getElementById(id);
+    el.classList.toggle('open');
+  }
+
+  // ── Active nav highlight on scroll ───────────────────────
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 120) current = s.id;
+    });
+    navLinks.forEach(a => {
+      a.style.color = a.getAttribute('href') === '#' + current
+        ? 'var(--text)' : '';
+    });
+  }, { passive: true });
+</script>
 </body>
 </html>
