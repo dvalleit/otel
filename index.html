@@ -489,6 +489,7 @@ await sdk.shutdown();</code></pre>
       <div class="tab-bar">
         <button class="tab-btn active" onclick="switchTab(this,'metrics','py')">Python — Metrics</button>
         <button class="tab-btn" onclick="switchTab(this,'metrics','yaml')">Collector Config</button>
+        <button class="tab-btn" onclick="switchTab(this,'metrics','run')">Run the Collector</button>
       </div>
       <div class="tab-pane active" id="metrics-py">
         <button class="copy-btn" onclick="copyCode(this)">Copy</button>
@@ -562,6 +563,55 @@ service:
       receivers: [otlp]
       processors: [memory_limiter, batch]
       exporters: [debug, prometheus]</code></pre>
+      </div>
+      <div class="tab-pane" id="metrics-run">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre><code class="language-bash"># ── Option 1: Docker (recommended for local dev) ──────────────────────────────
+# Save the Collector Config tab content as otel-collector-config.yaml first,
+# then run the official contrib image and mount your config file:
+
+docker run --rm \
+  -p 4317:4317 \
+  -p 4318:4318 \
+  -p 8889:8889 \
+  -v $(pwd)/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml \
+  otel/opentelemetry-collector-contrib:latest
+
+# Ports exposed:
+#   4317  — OTLP gRPC  (your app sends traces/metrics here)
+#   4318  — OTLP HTTP  (alternative transport)
+#   8889  — Prometheus scrape endpoint (metrics)
+
+# ── Option 2: Docker Compose (collector + Jaeger together) ────────────────────
+# docker-compose.yml
+# services:
+#   otel-collector:
+#     image: otel/opentelemetry-collector-contrib:latest
+#     volumes:
+#       - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+#     ports:
+#       - "4317:4317"
+#       - "4318:4318"
+#       - "8889:8889"
+#
+#   jaeger:
+#     image: jaegertracing/all-in-one:latest
+#     environment:
+#       - COLLECTOR_OTLP_ENABLED=true
+#     ports:
+#       - "16686:16686"  # Jaeger UI
+#       - "4317:4317"    # OTLP gRPC (collector → jaeger)
+#
+# Then run: docker compose up
+
+# ── Option 3: Native binary ───────────────────────────────────────────────────
+# Download the latest release for your OS from:
+#   https://github.com/open-telemetry/opentelemetry-collector-releases/releases
+#
+# macOS (Apple Silicon example):
+curl -LO https://github.com/open-telemetry/opentelemetry-collector-releases/releases/latest/download/otelcol-contrib_darwin_arm64.tar.gz
+tar -xzf otelcol-contrib_darwin_arm64.tar.gz
+./otelcol-contrib --config otel-collector-config.yaml</code></pre>
       </div>
     </div>
   </div>
