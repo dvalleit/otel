@@ -636,6 +636,8 @@ tar -xzf otelcol-contrib_darwin_arm64.tar.gz
       <div class="tab-bar">
         <button class="tab-btn active" onclick="switchTab(this,'prod','py')">Python — Propagation</button>
         <button class="tab-btn" onclick="switchTab(this,'prod','sampling')">Sampling</button>
+        <button class="tab-btn" onclick="switchTab(this,'prod','service-a')">service_a.py</button>
+        <button class="tab-btn" onclick="switchTab(this,'prod','service-b')">service_b.py</button>
       </div>
       <div class="tab-pane active" id="prod-py">
         <button class="copy-btn" onclick="copyCode(this)">Copy</button>
@@ -694,6 +696,115 @@ provider = TracerProvider(sampler=sampler)
 #       - name: slow-traces-policy
 #         type: latency
 #         latency: {threshold_ms: 500}</code></pre>
+      </div>
+      <div class="tab-pane" id="prod-service-a">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre><code class="language-python"># service_a.py — run this after service_b.py is already running
+# pip install opentelemetry-api opentelemetry-sdk requests
+#
+# Root spans are sampled at 10% (flip the coin here).
+# inject() stamps the decision into the outgoing HTTP headers
+# so Service B can join the same trace via ParentBased.
+#
+# Tip: change TraceIdRatioBased(0.1) → TraceIdRatioBased(1.0)
+# while testing to always see console output.
+
+import requests
+from opentelemetry import trace
+from opentelemetry.propagate import inject
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.trace.sampling import (
+    ParentBased,
+    TraceIdRatioBased,
+    ALWAYS_ON,
+    ALWAYS_OFF,
+)
+
+sampler = ParentBased(
+    root=TraceIdRatioBased(0.1),          # 10% of root spans sampled
+    remote_parent_sampled=ALWAYS_ON,      # keep if parent kept
+    remote_parent_not_sampled=ALWAYS_OFF, # drop if parent dropped
+)
+
+provider = TracerProvider(sampler=sampler)
+provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+trace.set_tracer_provider(provider)
+
+tracer = trace.get_tracer(__name__)
+
+
+def call_service_b():
+    with tracer.start_as_current_span("service-a: call-b") as span:
+        headers = {}
+        inject(headers)  # writes traceparent header → Service B reads it
+
+        span.set_attribute("http.url", "http://localhost:5001/data")
+        span.set_attribute("service.name", "service-a")
+
+        response = requests.get("http://localhost:5001/data", headers=headers)
+        span.set_attribute("http.status_code", response.status_code)
+
+        print("Response from Service B:", response.json())
+        return response.json()
+
+
+if __name__ == "__main__":
+    call_service_b()</code></pre>
+      </div>
+      <div class="tab-pane" id="prod-service-b">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre><code class="language-python"># service_b.py — run this first, then run service_a.py
+# pip install opentelemetry-api opentelemetry-sdk flask
+#
+# extract() reads the traceparent header injected by Service A.
+# ParentBased then honours Service A's sampling decision:
+#   sampled=yes → ALWAYS_ON, sampled=no → ALWAYS_OFF.
+# Both services appear as one connected trace in your backend.
+
+from flask import Flask, request as flask_request, jsonify
+from opentelemetry import trace
+from opentelemetry.propagate import extract
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.trace.sampling import (
+    ParentBased,
+    TraceIdRatioBased,
+    ALWAYS_ON,
+    ALWAYS_OFF,
+)
+
+sampler = ParentBased(
+    root=TraceIdRatioBased(0.1),          # fallback if no parent header
+    remote_parent_sampled=ALWAYS_ON,      # honour parent's keep decision
+    remote_parent_not_sampled=ALWAYS_OFF, # honour parent's drop decision
+)
+
+provider = TracerProvider(sampler=sampler)
+provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+trace.set_tracer_provider(provider)
+
+tracer = trace.get_tracer(__name__)
+
+app = Flask(__name__)
+
+
+@app.route("/data")
+def get_data():
+    ctx = extract(flask_request.headers)  # reads traceparent → links to Service A's trace
+
+    with tracer.start_as_current_span("service-b: get-data", context=ctx) as span:
+        span.set_attribute("http.method", flask_request.method)
+        span.set_attribute("http.route", "/data")
+        span.set_attribute("service.name", "service-b")
+
+        result = {"message": "Hello from Service B", "status": "ok"}
+        return jsonify(result)
+
+
+if __name__ == "__main__":
+    print("Service B listening on http://localhost:5001")
+    app.run(port=5001)</code></pre>
       </div>
     </div>
   </div>
